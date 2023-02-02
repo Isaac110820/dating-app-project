@@ -1,0 +1,250 @@
+---
+title: "Dating App User Data"
+author: "Isaac Baca"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## A visualization of one users experience with dating apps in 2022
+
+This is a summary of data collected from a single users experience with online dating apps in the year 2022.  The data set contains data on the following variables: 
+
+_The variable category **"me"** refers to the user.  The variable category **"her"** refers to the match_
+
+`Name`: The first name of the match.
+
+`Year`: The year in which the match was made.
+
+`Month`: The month in which the match was made.
+
+`app`: A categorical variable indicating the app where the match was made.  The categories for this variable include **bumble**, **tinder**, and **hinge**.
+
+`age`: The age of the match.
+
+`messaged_first`: A categorical variable indicating who messaged first after the match was made.  The categories for this variable include **me**, **her**, or **none**.
+
+`first_response`: A binary variable indicating whether the match replied at least one time after the conversation was initiated.  The categories for this variable include **yes** or **no**.
+
+`phone_number`: A binary variable indicating whether the phone numbers where exchanged between the user and the match.  The categories for this variable include **yes** or **no**.
+
+`date_cancled`: A binary variable indicating whether the first date was canceled.  The categories for this variable include **yes** or **no**.
+
+`first_date`: A binary variable indicating whether there was a first date.  The categories for this variable include **yes** or **no**.
+
+`date_duration`: A continuous variable indicating the duration of the date in minutes.
+
+`enjoyment`: A variable from 1-10 indicating the users level of enjoyment of the first date, with 1 being the least enjoyable and 10 being the most enjoyable. 
+
+`paid`: A categorical variable indicating who paid for the first date.  The categories for this variable include **her**, **me**, or **both**.
+
+`cost`: A continuous variable indicating the total cost of the first date for both the user and the match.
+
+`amount_me`: A continuous variable indicating the total cost of the first date for the user.
+
+`amount_her`: A continuous variable indicating the total cost of the first date for the match.
+
+`X2nd_date`: A binary variable indicating whether there was a second date.  The categories for this variable include **yes** or **no**.
+
+`relationship`: A binary variable indicating whether there was a relationship with the match.  The categories for this variable include **yes** or **no**.
+
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+exceldata = read_excel("/Volumes/Vandy Main/Data/Dating Apps/2022_Dating_App Data.xlsx")
+data = data.frame(exceldata)
+str(data)
+```
+
+## Getting a count of who messaged first
+
+I first group by `app`, then I get a count of each of the three categories in the `messaged_first` variable for each app. The possible categories include: **her**, **me**, or **none**.
+
+```{r}
+count_messaged_first = data %>%
+  group_by(app) %>%
+count(messaged_first)
+count_messaged_first
+```
+
+I then plot the results.
+
+```{r}
+ggplot(data, aes(x = app, fill = messaged_first)) + geom_bar() + 
+  labs(x =" ", y = " ", title = "Number of matches") + 
+  scale_fill_discrete(name = "Who messaged first?", 
+                      labels = c("Her", "Me", "Nobody"))
+```
+
+## Percent of matches who replied at least once
+
+##### Of all of the conversations that were innitiated (by either party), I want to visualize the percentage of people who replied at least one time.  This is the number of first responses divided by the total number of conversations innitiated for each `app`. 
+
+First, I obtain a count of the total conversations initiated by filtering the data for cases where `messaged_first` is true for either **me** or **her**.  Then I group by `app` and count the number of total conversations initiated for each `app`. I name this variable `conversation_initiated`.
+
+```{r}
+conversation_initiated = data %>%
+  filter(messaged_first == "me" | messaged_first == "her") %>%
+  group_by(app) %>%
+  count()
+conversation_initiated
+```
+
+Next, I obtain a count of the number of people who replied at least once from each `app`, by filtering the data for all observations where **yes** is true for the `first_response` variable. Then, I group by `app` and count the number of first responses for each app. I name this variable `replied`.
+
+```{r}
+replied = data %>%
+  filter(first_response == "yes") %>%
+  group_by(app) %>%
+  count()
+replied
+```
+
+Next, I bind together the `conversation_initiated` data frame with the *count vector* of the `replied` data frame.  I name this new data frame `ratio`.
+
+```{r}
+ratio = cbind(conversation_initiated, replied$n)
+ratio
+```
+
+I then rename the columns to reflect the data that they hold
+
+```{r}
+ratio = ratio %>%
+  rename("conversation_initiated" = "n", "replied" = "...3")
+ratio
+```
+
+Finally, I obtain the percentage of initiated conversations that received at least one reply from the match.  I name this variable `percent_reply`, and add it to the `ratio` data frame.  
+
+```{r}
+ratio = ratio %>%
+  mutate(percent_reply = (replied/conversation_initiated) * 100)
+ratio
+```
+
+Then I plot the results
+
+```{r}
+ggplot(ratio, aes(x = app, y = percent_reply, fill = app)) + geom_col() +
+  labs(title = "Percent of initiated conversations that received at least one reply", x =" ", y = " ") + 
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 10)) + 
+  scale_fill_discrete(name = "App")
+```
+
+## A count of phone numbers exchanged between the user and the match
+
+First, I filter the data for all observations where **yes** is true for the variable `phone_number`.  I name this new data frame `filtered_number`.
+
+```{r}
+filtered_number = data %>%
+  filter(phone_number == "yes")
+str(filtered_number)
+```
+
+Then, I plot the results
+
+```{r}
+ggplot(filtered_number, aes(x = app, fill = app)) + geom_bar() +
+  labs(title = "Exchanged phone numbers", x =" ", y = " ") + 
+  scale_y_continuous(limits = c(0, 12), breaks = c(1:12)) +
+  scale_fill_discrete(name = "App")
+```
+
+## A count of the amount of first dates that were canceled.
+
+First, I filter the data for all observations where either **her** or **me** is true for the variable `date_cancled`.  I name this new data frame `filtered_date_canceled`.
+
+```{r}
+filtered_data_canceled = data %>%
+  filter(date_cancled == "her" | date_cancled == "me") 
+str(filtered_data_canceled)
+```
+
+Then, I plot the results
+
+```{r}
+ggplot(filtered_data_canceled, aes(x = app, fill = date_cancled)) + geom_bar() + 
+  labs(title = "How many first dates were canceled?", x = " ", y = " ") + 
+  scale_fill_discrete(name = "Who canceled?", labels = c("her")) + 
+  scale_y_continuous(breaks = c(0:2))
+```
+
+## A count of the amount of first and second dates that the user went on.
+
+First, I filter the data for all observations where **yes** is true for the variable `first_date`.  I name this new data frame `filtered_first_date`.
+
+```{r}
+filtered_first_date = data %>%
+  filter(first_date == "yes")
+str(filtered_first_date)
+```
+
+Then, I plot the results
+
+```{r}
+#plot of number of first dates and number of second dates
+ggplot(filtered_first_date, aes(x = app, fill = X2nd_date)) + geom_bar() + 
+  labs(title = "How many different people did the user go on a first date with?", x = " ", y = " ") +
+  scale_y_continuous(limits = c(0, 10), breaks = c(0:10)) + 
+  scale_fill_discrete(name = "Second date?")
+```
+
+## Who paid for the first date?
+
+I use the `filtered_first_date` data frame created earlier and plot the results. 
+```{r}
+ggplot(filtered_first_date, aes(x = app, fill = paid)) + 
+  geom_bar(position = "dodge") + 
+  labs(title = "Who paid for the first date?", x = " ", y = " ") +
+  scale_y_continuous(limits = c(0, 5), breaks = c(0:5)) + 
+  scale_fill_discrete(name = "Who paid?")
+```
+
+## Cost of the first date
+First, I change the data type of `cost` to numeric
+
+```{r}
+filtered_first_date$cost = as.numeric(filtered_first_date$cost)
+```
+
+Then, I plot the results.
+
+```{r}
+ggplot(filtered_first_date, aes(x = app, y = cost, fill = app)) + 
+  geom_boxplot() + 
+  labs(title = "Average cost of first date (in U.S. dollars)", x = " ", y = " ") + 
+  scale_y_continuous(limits = c(0, 350), breaks = c(seq(0, 350, by = 25))) + 
+  scale_fill_discrete(name = "App") + 
+  geom_jitter(alpha = .3, width = .01, height = 0) 
+```
+
+## Enjoyment of the first date (on a scale from 1-10)
+
+First, I change the data type of `enjoyment` to numeric.
+
+```{r}
+filtered_first_date$enjoyment = as.numeric(filtered_first_date$enjoyment)
+```
+
+Then, I plot the results.
+
+```{r}
+ggplot(filtered_first_date, aes(x = app, y = enjoyment, fill = app)) + 
+  geom_boxplot() + 
+  labs(title = "My average enjoyment of the first date", x = " ", y = " ") + 
+  scale_y_continuous(limits = c(1, 10), breaks = c(seq(1, 10, by = 1))) + 
+  scale_fill_discrete(name = "App") + 
+  geom_jitter(alpha = .5, width = .2, height = 0)
+```
+
+
+
