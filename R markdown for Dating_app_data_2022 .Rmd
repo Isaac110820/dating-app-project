@@ -27,7 +27,7 @@ _The variable category **"me"** refers to the user.  The variable category **"he
 
 `app`: A categorical variable indicating the app where the match was made.  The categories for this variable include **bumble**, **tinder**, and **hinge**.
 
-`age`: The age of the match.
+`age`: The age of the match. 
 
 `messaged_first`: A categorical variable indicating who messaged first after the match was made.  The categories for this variable include **me**, **her**, or **none**.
 
