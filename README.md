@@ -6,4 +6,5 @@
 - A count of the amount of first dates, grouped by app
 - Box plots demonstrating the cost of first dates, grouped by app
 
+
 [click here to see the full project]("https://isaac110820.github.io/dating-app-project/dating-app-viz.html")
